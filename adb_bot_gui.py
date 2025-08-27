@@ -1,3 +1,4 @@
+import cv2
 import yaml
 import tempfile
 import uuid
@@ -11,6 +12,8 @@ from tkinter import ttk, filedialog, messagebox
 
 # Импорт API и функций из ядра
 import adb_bot as core
+
+
 
 
 class _DualWriter:
@@ -50,6 +53,11 @@ class App(tk.Tk):
         self._ap_once_stop = None
 
 
+        self._mirror_stream = None
+        self._mirror_thread = None
+        self._mirror_running = False
+
+        self._mirror_proc = None
 
 
         # --------- переменные состояния ---------
@@ -86,6 +94,9 @@ class App(tk.Tk):
         )
         self.device_combo.pack(side="left", padx=(6, 8))
         ttk.Button(row1, text="Обновить список", command=self.refresh_devices).pack(side="left")
+        self.mirror_btn = ttk.Button(row1, text="Открыть трансляцию", command=self.toggle_mirror)
+        self.mirror_btn.pack(side="left", padx=(8, 0))
+
 
         ttk.Separator(row1, orient="vertical").pack(side="left", fill="y", padx=10)
 
@@ -190,6 +201,78 @@ class App(tk.Tk):
         self.log.insert("end",
                         "Готово. Выберите устройство, задайте пути к файлам и используйте кнопки сверху.\n"
                         "Во время записи откроется окно предпросмотра со всеми горячими клавишами.\n")
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
+
+    def _on_close(self):
+        # мягко гасим зеркало, если запущено
+        self._mirror_running = False
+        
+        try:
+            if self._mirror_proc and self._mirror_proc.poll() is None:
+                self._mirror_proc.terminate()
+        except Exception:
+            pass
+        self.destroy()
+
+    def toggle_mirror(self):
+        # Если уже запущено — закрыть
+        if self._mirror_proc and self._mirror_proc.poll() is None:
+            try:
+             self._mirror_proc.terminate()
+            except Exception:
+                pass
+            self.mirror_btn.config(text="Открыть трансляцию")
+            print("Трансляция остановлена\n")
+            return
+
+        serial = self._selected_serial()
+        if not serial and self.serial_var.get() == "(авто)":
+            print("Нет выбранного устройства\n")
+            return
+
+        adb_bot_py = os.path.join(os.path.dirname(__file__), "adb_bot.py")
+        cmd = [_sys.executable, "-u", adb_bot_py, "mirror"]
+        if serial:
+            cmd += ["--serial", serial]
+        # стартуем 1:1 для максимального качества (без ресайза)
+        cmd += ["--scale", "1.0"]
+
+        # Запуск отдельного процесса с HighGUI-окном
+        self._mirror_proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1
+        )
+
+        # Поток: подтягивает лог в окно
+        def _pipe_log():
+            try:
+                assert self._mirror_proc.stdout is not None
+                for line in self._mirror_proc.stdout:
+                    print(line, end="")
+            except Exception:
+                pass
+
+        # Вотчер: когда окно закроют, вернуть кнопку
+        def _watcher():
+            try:
+                rc = self._mirror_proc.wait()
+                # в главном потоке: вернуть подпись
+                self.after(0, lambda: self.mirror_btn.config(text="Открыть трансляцию"))
+                print(f"Трансляция остановлена (код {rc})\n")
+            except Exception:
+                pass
+
+        threading.Thread(target=_pipe_log, daemon=True).start()
+        threading.Thread(target=_watcher, daemon=True).start()
+        self.mirror_btn.config(text="Закрыть трансляцию")
+        print("Трансляция запущена\n")
+
+
+
+
 
     def _wire_logs(self):
         # Дублируем stdout/stderr в окно лога
@@ -254,6 +337,14 @@ class App(tk.Tk):
             self.grid_path_var.set(path)
 
     def on_record(self):
+
+        # если трансляция включена — выключаем её
+        if self._mirror_running:
+            self._mirror_running = False
+            if self._mirror_thread:
+                self._mirror_thread.join(timeout=1)
+            print("Трансляция была принудительно закрыта перед записью сценария\n")
+
         # всегда спрашиваем файл для записи
         path = filedialog.asksaveasfilename(
             defaultextension=".yaml",

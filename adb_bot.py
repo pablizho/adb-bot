@@ -75,6 +75,7 @@ import numpy as np
 import yaml
 import av, threading
 
+
 # рядом с импортами
 def _default_grid_path():
     return "templates/grid.yaml" if os.path.exists("templates/grid.yaml") else "grid.yaml"
@@ -96,12 +97,14 @@ class ScreenStream:
             args += ["-s", self.adb.serial]
         args += ["exec-out", "screenrecord", "--output-format=h264", "--bit-rate", self.bitrate, "-"]
         self.proc = subprocess.Popen(args, stdout=subprocess.PIPE)
-        self.container = av.open(self.proc.stdout, format="h264")
+        # !!! больше НЕ вызываем av.open здесь
         self.t = threading.Thread(target=self._loop, daemon=True)
         self.t.start()
 
     def _loop(self):
         try:
+            # !!! теперь открываем контейнер в фоне, чтобы не блокировать Tkinter
+            self.container = av.open(self.proc.stdout, format="h264")
             for packet in self.container.demux(video=0):
                 if self._stop.is_set():
                     break
@@ -109,19 +112,85 @@ class ScreenStream:
                     self.frame = frm.to_ndarray(format="bgr24")
         except Exception as e:
             print("[stream] stopped:", e)
+        finally:
+            try:
+                if self.container:
+                    self.container.close()
+            except Exception:
+                pass
 
     def read(self):
-        return self.frame  # может быть None до прихода первого кадра
+        return self.frame
 
     def stop(self):
         self._stop.set()
         try:
-            if self.container: self.container.close()
-        except Exception: pass
+            if self.container:
+                self.container.close()
+        except Exception:
+            pass
         if self.proc:
-            try: self.proc.kill()
-            except Exception: pass
-        if self.t: self.t.join(timeout=1)
+            try:
+                self.proc.kill()
+            except Exception:
+                pass
+        if self.t:
+            self.t.join(timeout=1)
+
+def run_mirror(adb: "ADB", scale: float = 1.0):
+    """
+    Отдельное HighGUI-окно для трансляции.
+    Масштаб по умолчанию 1:1 (без ресайза => без потери качества).
+    Клавиши: ESC — выйти; '+'/'=' — увеличить; '-' — уменьшить; '1' — 1:1.
+    """
+    win = "ADB Mirror"
+    stream = ScreenStream(adb, bitrate="8M")
+    stream.start()
+    try:
+        cv2.namedWindow(win, cv2.WINDOW_NORMAL)
+        cur_scale = float(scale)
+        while True:
+            # если окно закрыли крестиком
+            try:
+                vis = cv2.getWindowProperty(win, cv2.WND_PROP_VISIBLE)
+                if vis < 1:
+                    break
+            except cv2.error:
+                break
+
+            frm = stream.read()
+            if frm is not None:
+                if abs(cur_scale - 1.0) < 1e-3:
+                    disp = frm
+                else:
+                    h, w = frm.shape[:2]
+                    nw, nh = max(1, int(w * cur_scale)), max(1, int(h * cur_scale))
+                    # внизмасштаб — INTER_AREA (качество), вверхмасштаб — INTER_NEAREST (без «мыла»)
+                    inter = cv2.INTER_AREA if cur_scale < 1.0 else cv2.INTER_NEAREST
+                    disp = cv2.resize(frm, (nw, nh), interpolation=inter)
+                cv2.imshow(win, disp)
+
+            key = (cv2.waitKey(1) & 0xFF)
+            if key == 27:  # ESC
+                break
+            elif key in (ord('+'), ord('=')):
+                cur_scale = min(4.0, cur_scale * 1.1)
+            elif key == ord('-'):
+                cur_scale = max(0.1, cur_scale / 1.1)
+            elif key == ord('1'):
+                cur_scale = 1.0
+
+    except Exception as e:
+        print(f"[mirror] error: {e}")
+    finally:
+        try:
+            stream.stop()
+        except Exception:
+            pass
+        try:
+            cv2.destroyWindow(win)
+        except Exception:
+            pass
 
 
 # ---------------------------- ADB utils ----------------------------
@@ -408,7 +477,7 @@ class Recorder:
                 cv2.destroyWindow(self.window)  # self.window = "ADB Recorder" (или как у тебя названо)
             except Exception:
                 pass
-            ыtime.sleep(0.05)  # чуть-чуть подождём, чтобы HighGUI корректно отпустил окно
+            time.sleep(0.05)  # чуть-чуть подождём, чтобы HighGUI корректно отпустил окно
 
 
 
@@ -1058,6 +1127,9 @@ def main():
     p_auto.add_argument("--delay", type=float, default=0.30)
     p_auto.add_argument("--serial", default=os.environ.get("ANDROID_SERIAL"))
 
+    p_mirr = sub.add_parser("mirror", help="Open live mirror window (HighGUI)")
+    p_mirr.add_argument("--serial", default=os.environ.get("ANDROID_SERIAL"))
+    p_mirr.add_argument("--scale", type=float, default=1.0)
 
     args = ap.parse_args()
 
@@ -1072,6 +1144,8 @@ def main():
         calibrate_grid(adb, rows=args.rows, cols=args.cols, out_path=args.out)
     elif args.cmd == "match3":
         match3_once(adb, grid_yaml=args.grid, action_mode=args.mode)
+    elif args.cmd == "mirror":
+        run_mirror(ADB(serial=args.serial), scale=args.scale)
 
     elif args.cmd == "autoplay":
         n = match3_autoplay(adb, grid_yaml=args.grid, mode=args.mode,

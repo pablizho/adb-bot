@@ -1,48 +1,98 @@
 - type: tap
   at:
-  - 0.7343
-  - 0.7556
+  - 0.7852
+  - 0.1444
+- type: swipe
+  from:
+  - 0.5833
+  - 0.6026
+  to:
+  - 0.5833
+  - 0.3513
+  ms: 180
+- type: wait
+  seconds: 1.0
+- type: swipe
+  from:
+  - 0.3157
+  - 0.6513
+  to:
+  - 1.1852
+  - 0.6594
+  ms: 180
 - type: wait
   seconds: 1.0
 - type: tap
   at:
-  - 0.087
-  - 0.9538
+  - 0.1019
+  - 0.2692
+- type: wait
+  seconds: 2.0
+- type: tap
+  at:
+  - 0.2852
+  - 0.5624
+- type: wait
+  seconds: 2.0
+- type: tap
+  at:
+  - 0.4815
+  - 0.1303
 - type: wait
   seconds: 1.0
 - type: tap
   at:
-  - 0.4963
-  - 0.9594
+  - 0.9028
+  - 0.1346
 - type: wait
   seconds: 1.0
 - type: tap
   at:
-  - 0.1324
-  - 0.9538
+  - 0.9028
+  - 0.1346
 - type: wait
   seconds: 1.0
 - type: tap
   at:
-  - 0.3037
-  - 0.9611
+  - 0.9028
+  - 0.1346
 - type: wait
   seconds: 1.0
 - type: tap
   at:
-  - 0.1167
-  - 0.8778
+  - 0.075
+  - 0.0748
 - type: wait
   seconds: 1.0
 - type: tap
   at:
-  - 0.0778
-  - 0.9556
+  - 0.788
+  - 0.9705
 - type: wait
   seconds: 1.0
 - type: tap
   at:
-  - 0.1139
-  - 0.9624
+  - 0.788
+  - 0.9705
+- type: wait
+  seconds: 1.0
+- type: tap
+  at:
+  - 0.538
+  - 0.9803
+- type: wait
+  seconds: 1.0
+- type: tap
+  at:
+  - 0.2528
+  - 0.9803
+- type: swipe
+  from:
+  - 0.4269
+  - 0.6568
+  to:
+  - 0.5898
+  - 0.3444
+  ms: 180
 - type: wait
   seconds: 1.0
