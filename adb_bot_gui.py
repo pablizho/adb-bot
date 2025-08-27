@@ -9,6 +9,8 @@ import os
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
+import cv2
+
 # Импорт API и функций из ядра
 import adb_bot as core
 
@@ -48,6 +50,9 @@ class App(tk.Tk):
 
         self._ap_once_thread = None
         self._ap_once_stop = None
+
+        self._mirror_thread = None
+        self._mirror_stop = None
 
 
 
@@ -91,6 +96,10 @@ class App(tk.Tk):
 
         ttk.Checkbutton(row1, text="LIVE при записи (повторять клики на устройстве)",
                         variable=self.live_var).pack(side="left")
+
+        self.mirror_btn = ttk.Button(row1, text="Показать трансляцию",
+                                     command=self.on_toggle_mirror)
+        self.mirror_btn.pack(side="left", padx=(8, 0))
 
         # --- строка 2: пути файлов (всегда на виду) ---
         files = ttk.LabelFrame(root, text="Файлы", padding=8)
@@ -253,6 +262,48 @@ class App(tk.Tk):
         if path:
             self.grid_path_var.set(path)
 
+    def on_toggle_mirror(self):
+        if self._mirror_thread:
+            self._mirror_stop.set()
+            self._mirror_thread.join(timeout=1)
+            self._mirror_thread = None
+            self._mirror_stop = None
+            try:
+                cv2.destroyWindow("Трансляция")
+            except Exception:
+                pass
+            self.mirror_btn.config(text="Показать трансляцию")
+        else:
+            serial = self._selected_serial()
+            self._mirror_stop = threading.Event()
+
+            def loop():
+                adb = core.ADB(serial=serial)
+                stream = core.ScreenStream(adb, bitrate="8M")
+                stream.start()
+                try:
+                    while not self._mirror_stop.is_set():
+                        frame = stream.read()
+                        if frame is not None:
+                            cv2.imshow("Трансляция", frame)
+                        if cv2.waitKey(1) & 0xFF == 27:
+                            break
+                        if cv2.getWindowProperty("Трансляция", cv2.WND_PROP_VISIBLE) < 1:
+                            break
+                finally:
+                    stream.stop()
+                    try:
+                        cv2.destroyWindow("Трансляция")
+                    except Exception:
+                        pass
+                    self._mirror_thread = None
+                    self._mirror_stop = None
+                    self.mirror_btn.after(0, lambda: self.mirror_btn.config(text="Показать трансляцию"))
+
+            self._mirror_thread = threading.Thread(target=loop, daemon=True)
+            self._mirror_thread.start()
+            self.mirror_btn.config(text="Закрыть трансляцию")
+
     def on_record(self):
         # всегда спрашиваем файл для записи
         path = filedialog.asksaveasfilename(
@@ -265,6 +316,9 @@ class App(tk.Tk):
             return
         self.scenario_path_var.set(path)
         self._ensure_path_dir(path)
+
+        if self._mirror_thread:
+            self.on_toggle_mirror()
 
         serial = self._selected_serial()
         live = self.live_var.get()
