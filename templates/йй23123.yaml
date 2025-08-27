@@ -1,0 +1,48 @@
+- type: tap
+  at:
+  - 0.7343
+  - 0.7556
+- type: wait
+  seconds: 1.0
+- type: tap
+  at:
+  - 0.087
+  - 0.9538
+- type: wait
+  seconds: 1.0
+- type: tap
+  at:
+  - 0.4963
+  - 0.9594
+- type: wait
+  seconds: 1.0
+- type: tap
+  at:
+  - 0.1324
+  - 0.9538
+- type: wait
+  seconds: 1.0
+- type: tap
+  at:
+  - 0.3037
+  - 0.9611
+- type: wait
+  seconds: 1.0
+- type: tap
+  at:
+  - 0.1167
+  - 0.8778
+- type: wait
+  seconds: 1.0
+- type: tap
+  at:
+  - 0.0778
+  - 0.9556
+- type: wait
+  seconds: 1.0
+- type: tap
+  at:
+  - 0.1139
+  - 0.9624
+- type: wait
+  seconds: 1.0

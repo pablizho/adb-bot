@@ -1,0 +1,124 @@
+- type: wait
+  seconds: 1.0
+- type: wait_image
+  template: templates\tpl_1756146406004996000.png
+  threshold: 0.92
+  timeout: 10.0
+- type: wait
+  seconds: 1.0
+- type: swipe
+  from:
+  - 0.3519
+  - 0.6833
+  to:
+  - 0.2611
+  - 0.6833
+  ms: 180
+- type: wait
+  seconds: 3.0
+- type: wait_image
+  template: templates\tpl_1756146427649775300.png
+  threshold: 0.92
+  timeout: 10.0
+- type: wait
+  seconds: 1.0
+- type: swipe
+  from:
+  - 0.5083
+  - 0.4735
+  to:
+  - 0.5056
+  - 0.4927
+  ms: 180
+- type: swipe
+  from:
+  - 0.5056
+  - 0.4957
+  to:
+  - 0.5296
+  - 0.5526
+  ms: 180
+- type: wait
+  seconds: 4.0
+- type: wait_image
+  template: templates\tpl_1756146454630306000.png
+  threshold: 0.92
+  timeout: 10.0
+- type: wait
+  seconds: 2.0
+- type: tap
+  at:
+  - 0.1259
+  - 0.897
+- type: wait
+  seconds: 9.0
+- type: wait_image
+  template: templates\tpl_1756146488158273100.png
+  threshold: 0.92
+  timeout: 10.0
+- type: wait
+  seconds: 1.0
+- type: swipe
+  from:
+  - 0.2435
+  - 0.6013
+  to:
+  - 0.3787
+  - 0.6179
+  ms: 180
+- type: wait
+  seconds: 4.0
+- type: wait_image
+  template: templates\tpl_1756146527212945900.png
+  threshold: 0.92
+  timeout: 10.0
+- type: wait
+  seconds: 2.0
+- type: tap
+  at:
+  - 0.3426
+  - 0.8983
+- type: wait_image
+  template: templates\tpl_1756146550644226400.png
+  threshold: 0.92
+  timeout: 10.0
+- type: wait
+  seconds: 2.0
+- type: tap
+  at:
+  - 0.6796
+  - 0.8902
+- type: wait
+  seconds: 6.0
+- type: wait_image
+  template: templates\tpl_1756146583309129000.png
+  threshold: 0.92
+  timeout: 10.0
+- type: wait
+  seconds: 2.0
+- type: tap
+  at:
+  - 0.7667
+  - 0.0513
+- type: wait
+  seconds: 4.0
+- type: wait_image
+  template: templates\tpl_1756146608014147100.png
+  threshold: 0.92
+  timeout: 10.0
+- type: wait
+  seconds: 2.0
+- type: tap
+  at:
+  - 0.7824
+  - 0.0568
+- type: wait_image
+  template: templates\tpl_1756146643701652300.png
+  threshold: 0.92
+  timeout: 10.0
+- type: wait
+  seconds: 2.0
+- type: tap
+  at:
+  - 0.1407
+  - 0.8872

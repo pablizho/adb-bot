@@ -1,0 +1,7 @@
+index: 2
+step:
+  type: wait_image
+  template: templates\tpl_1756146406004996000.png
+  threshold: 0.92
+  timeout: 10.0
+reason: step returned False
